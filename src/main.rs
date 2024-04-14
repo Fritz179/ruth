@@ -1,117 +1,41 @@
-#![allow(clippy::new_ret_no_self)]
+use std::{cell::RefCell, fmt::{Debug, Display}, ops::Deref, rc::Rc};
 
-use std::{cell::RefCell, fmt::{Debug, Display}, ops::{Add, Deref}, rc::Rc};
+mod types;
+use types::*;
 
-#[derive(Debug, Clone, Copy)]
-struct Real {
-    value: f64,
-}
+mod operations;
+use operations::*;
 
-impl Real {
-    fn new(value: f64) -> Expressions {
-       Expressions(Rc::new(RefCell::new(InnerExpressions::Real(Real { value }))))
-    }
-}
-
-impl Display for Real {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.value)
-    }
-}
-
-impl Add for Real {
-    type Output = Expressions;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Real::new(self.value + rhs.value)
-    }
-}
-
-impl Expression for Real {
-    fn get_children(&self) -> Vec<Expressions> {
-        vec![]
-    }
-
-    fn copy(&self) -> Expressions {
-        Real::new(self.value)
-    }
-}
-
-#[derive(Debug, Clone)]
-struct Addition {
-    left: Expressions,
-    right: Expressions,
-}
-
-impl Addition {
-    fn new(left: Expressions, right: Expressions) -> Expressions {
-        Expressions(Rc::new(RefCell::new(InnerExpressions::Addition(Self { left, right }))))
-    }
-}
-
-impl Display for Addition {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({} + {})", self.left, self.right)
-    }
-}
-
-impl Expression for Addition {
-    fn get_children(&self) -> Vec<Expressions> {
-        vec![self.left.clone(), self.right.clone()]
-    }
-
-    fn copy(&self) -> Expressions {
-        Addition::new(self.left.copy(), self.right.copy())
-    }
-}
+mod rules;
+use rules::*;
 
 trait Expression: Display + Debug + Clone {
     fn get_children(&self) -> Vec<Expressions>;
     fn copy(&self) -> Expressions;
-}
 
-#[derive(Debug, Clone)]
-struct Multiplication {
-    left: Expressions,
-    right: Expressions,
-}
-
-impl Multiplication {
-    fn new(left: Expressions, right: Expressions) -> Expressions {
-        Expressions(Rc::new(RefCell::new(InnerExpressions::Multiplication(Self { left, right }))))
-    }
-}
-
-impl Display for Multiplication {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({} * {})", self.left, self.right)
-    }
-}
-
-impl Expression for Multiplication {
-    fn get_children(&self) -> Vec<Expressions> {
-        vec![self.left.clone(), self.right.clone()]
-    }
-
-    fn copy(&self) -> Expressions {
-        Multiplication::new(self.left.copy(), self.right.copy())
-    }
+    fn solve(&self) -> Types;
 }
 
 #[derive(Debug, Clone)]
 enum InnerExpressions {
-    Real(Real),
+    Type(Types),
     Addition(Addition),
     Multiplication(Multiplication),
 }
 
 #[derive(Debug, Clone)]
-struct Expressions(Rc<RefCell<InnerExpressions>>);
+pub struct Expressions(Rc<RefCell<InnerExpressions>>);
+
+impl Expressions {
+    fn new(inner: InnerExpressions) -> Self {
+        Self(Rc::new(RefCell::new(inner)))
+    }
+}
 
 impl Display for Expressions {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.0.as_ref().borrow().deref() {
-            InnerExpressions::Real(real) => Display::fmt(&real, f),
+            InnerExpressions::Type(types) => Display::fmt(&types, f),
             InnerExpressions::Addition(addition) => Display::fmt(&addition, f),
             InnerExpressions::Multiplication(multiplication) => Display::fmt(&multiplication, f),
         }
@@ -121,7 +45,7 @@ impl Display for Expressions {
 impl Expression for Expressions {
     fn get_children(&self) -> Vec<Expressions> {
         match self.0.as_ref().borrow().deref() {
-            InnerExpressions::Real(real) => real.get_children(),
+            InnerExpressions::Type(types) => types.get_children(),
             InnerExpressions::Addition(addition) => addition.get_children(),
             InnerExpressions::Multiplication(multiplication) => multiplication.get_children(),
         }
@@ -129,58 +53,25 @@ impl Expression for Expressions {
 
     fn copy(&self) -> Expressions {
         match self.0.as_ref().borrow().deref() {
-            InnerExpressions::Real(real) => real.copy(),
+            InnerExpressions::Type(types) => types.copy(),
             InnerExpressions::Addition(addition) => addition.copy(),
             InnerExpressions::Multiplication(multiplication) => multiplication.copy(),
         }
     }
-}
 
-/// RULES
+    fn solve(&self) -> Types {
+        match self.0.as_ref().borrow().deref() {
+            InnerExpressions::Type(types) => types.solve(),
+            InnerExpressions::Addition(addition) => addition.solve(),
+            InnerExpressions::Multiplication(multiplication) => multiplication.solve(),
+        }
+    }
+}
 
 trait Rule: Debug + Display {
     fn apply(&self) -> InnerExpressions;
     fn matches(expression: &Expressions) -> Option<Self> where Self: Sized;
     // fn get_children(&self) -> Vec<Expressions>;
-}
-
-#[derive(Debug, Clone)]
-struct Distributivity {
-    expression: Expressions,
-    addition: Addition
-}
-
-impl Display for Distributivity {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Distributivity({}, {})", self.expression, self.addition)
-    }
-}
-
-impl Rule for Distributivity {
-    // fn get_children(&self) -> Vec<Expressions> {
-    //     vec![self.expression.clone(), Expressions(InnerExpressions::Addition(self.addition.clone()))]
-    // }
-
-    fn matches(expression: &Expressions) -> Option<Self> {
-        if let InnerExpressions::Multiplication(multiplication) = expression.0.as_ref().borrow().deref() {
-            if let InnerExpressions::Addition(ref addition) = multiplication.right.0.as_ref().borrow().deref() {
-                return Some(Distributivity {
-                    expression: multiplication.left.clone(),
-                    addition: addition.clone()
-                });
-            }
-        }
-
-        None
-    }
-
-    fn apply(&self) -> InnerExpressions {
-        let a = self.expression.clone();
-        let b = self.addition.left.clone();
-        let c = self.addition.right.clone();
-
-        InnerExpressions::Addition(Addition {left: Multiplication::new(a.clone(), b), right: Multiplication::new(a, c)})
-    }
 }
 
 fn find_all_rules(expression: &Expressions) -> Vec<Box<dyn Rule>> {
@@ -348,7 +239,7 @@ static COMMANDS: [&dyn Command; 4] = [
 ];
 
 fn main() -> std::io::Result<()> {
-    let equation = Multiplication::new(Real::new(2.0), Addition::new(Real::new(3.0), Real::new(4.0)));
+    let equation: Expressions = Multiplication::new(Real::new(2.0).into(), Addition::new(Real::new(3.0).into(), Real::new(4.0).into()).into()).into();
     
     let mut state = State {
         selection: equation.clone(),
