@@ -118,72 +118,50 @@ struct State {
     history: Vec<Expressions>,
 }
 
-trait Command: Send + Sync {
-    fn get_name(&self) -> &'static str;
-    fn get_description(&self) -> &'static str;
-    fn get_usage(&self) -> &'static str {
-        ""
-    }
+struct Command {
+    name: &'static str,
+    description: &'static str,
+    usage: &'static str,
 
-    fn execute(&self, state: &mut State, args: &[&str]);
+    execute: &'static dyn Fn(&mut State, &[&str]),
 }
 
-struct HelpCommand {}
+unsafe impl Send for Command {}
+unsafe impl Sync for Command {}
 
-impl Command for HelpCommand {
-    fn get_name(&self) -> &'static str {
-        "help"
-    }
+static HELP_COMMAND: Command = Command {
+    name: "help",
+    description: "Prints this help page",
+    usage: "",
 
-    fn get_description(&self) -> &'static str {
-        "Prints this help page"
-    }
-
-    fn execute(&self, _state: &mut State, _args: &[&str]) {
+    execute: &|_state: &mut State, _args: &[&str]| {
         println!("Commands:");
         for command in COMMANDS.iter() {
-            let start = format!("{} {}", command.get_name(), command.get_usage());
-            println!("    {:20}: {}", start, command.get_description());
+            let start = format!("{} {}", command.name, command.usage);
+            println!("    {:20}: {}", start, command.description);
         }
-        println!("exit: Exits the program")
-    }
-}
+    },
+};
 
-struct HistoryCommand {}
+static HISTORY_COMMAND: Command = Command {
+    name: "history",
+    description: "Prints all equations history",
+    usage: "",
 
-impl Command for HistoryCommand {
-    fn get_name(&self) -> &'static str {
-        "history"
-    }
-
-    fn get_description(&self) -> &'static str {
-        "Prints all equations history"
-    }
-
-    fn execute(&self, state: &mut State, _args: &[&str]) {
+    execute: &|state: &mut State, _args: &[&str]| {
         println!("History:");
         for point in state.history.iter() {
             println!("{}", point);
         }
-    }
-}
+    },
+};
 
-struct ChildrenCommand {}
+static CHILDREN_COMMAND: Command = Command {
+    name: "children",
+    description: "Prints current children or select child by index",
+    usage: "[<index> | top]",
 
-impl Command for ChildrenCommand {
-    fn get_name(&self) -> &'static str {
-        "children"
-    }
-
-    fn get_usage(&self) -> &'static str {
-        "[<index> | top]"
-    }
-
-    fn get_description(&self) -> &'static str {
-        "Prints current children or select child by index"
-    }
-
-    fn execute(&self, state: &mut State, args: &[&str]) {
+    execute: &|state: &mut State, args: &[&str]| {
         let children = state.selection.get_children();
 
         if let Some(index) = args.first() {
@@ -211,40 +189,24 @@ impl Command for ChildrenCommand {
             }
         }
     }
-}
+};
 
-struct TypeCommand {}
+static TYPE_COMMAND: Command = Command {
+    name: "type",
+    description: "Prints current equation with types",
+    usage: "",
 
-impl Command for TypeCommand {
-    fn get_name(&self) -> &'static str {
-        "type"
+    execute: &|state: &mut State, _args: &[&str]| {
+        println!("{:#}", state.selection);
     }
+};
 
-    fn get_description(&self) -> &'static str {
-        "Prints current equation with types"
-    }
+static RULES_COMMAND: Command = Command {
+    name: "rules",
+    description: "Prints all rules",
+    usage: "[<index>]",
 
-    fn execute(&self, state: &mut State, _args: &[&str]) {
-        println!("{:#}", state.current);
-    }
-}
-
-struct RulesCommand {}
-
-impl Command for RulesCommand {
-    fn get_name(&self) -> &'static str {
-        "rules"
-    }
-
-    fn get_description(&self) -> &'static str {
-        "Prints all rules"
-    }
-
-    fn get_usage(&self) -> &'static str {
-        "[<index>]"
-    }
-
-    fn execute(&self, state: &mut State, args: &[&str]) {
+    execute: &|state: &mut State, args: &[&str]| {
         let rules = rules::find_all_rules(&state.selection);
 
         if let Some(index) = args.first() {
@@ -274,17 +236,28 @@ impl Command for RulesCommand {
             }
         }
     }
-}
+};
 
-static COMMANDS: [&dyn Command; 5] = [
-    &HelpCommand {},
-    &HistoryCommand {},
-    &ChildrenCommand {},
-    &TypeCommand {},
-    &RulesCommand {},
+static EXIT_COMMAND: Command = Command {
+    name: "exit | quit | q",
+    description: "Exits the program",
+    usage: "",
+
+    execute: &|_state: &mut State, _args: &[&str]| {
+        std::process::exit(0);
+    }
+};
+
+static COMMANDS: [&Command; 6] = [
+    &HELP_COMMAND,
+    &HISTORY_COMMAND,
+    &CHILDREN_COMMAND,
+    &TYPE_COMMAND,
+    &RULES_COMMAND,
+    &EXIT_COMMAND,
 ];
 
-fn main() -> std::io::Result<()> {
+fn main() {
     let equation: Expressions = Multiplication::new(Real::new(2.0).into(), Addition::new(Real::new(3.0).into(), Real::new(4.0).into()).into()).into();
     
     let mut state = State {
@@ -293,7 +266,7 @@ fn main() -> std::io::Result<()> {
         current: equation,
     };
 
-    HelpCommand{}.execute(&mut state, &[]);
+    (HELP_COMMAND.execute)(&mut state, &[]);
 
     'outer: loop {
         println!();
@@ -303,7 +276,7 @@ fn main() -> std::io::Result<()> {
 
 
         let mut input = String::new();
-        std::io::stdin().read_line(&mut input)?;
+        std::io::stdin().read_line(&mut input).unwrap();
         let mut input = input.split_whitespace();
 
         let command_name = input.next().unwrap_or("");
@@ -317,15 +290,13 @@ fn main() -> std::io::Result<()> {
         println!();
 
         for command in COMMANDS.iter() {
-            if command.get_name() == command_name {
-                command.execute(&mut state, &args);
+            if command.name == command_name {
+                (command.execute)(&mut state, &args);
                 continue 'outer;
             }
         }
 
-        if command_name == "exit" || command_name == "quit" || command_name == "q" {
-            return Ok(());
-        } else if !command_name.is_empty() {
+        if !command_name.is_empty() {
             println!("Unknown command: {}", command_name);
             println!("enter <help> for help")
         }

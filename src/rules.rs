@@ -28,7 +28,7 @@ static CONST_EVALUATION: Rule = Rule {
     description: "1 + 1 = 2"
 };
 
-static RULES: [&'static Rule; 2] = [
+static RULES: [&Rule; 2] = [
     &DISTRIBUTIVITY, 
     &CONST_EVALUATION
 ];
@@ -57,7 +57,7 @@ pub fn find_all_rules(expression: &Expressions) -> Vec<Match> {
     for rule in RULES.iter() {
         if let Some(result) = (rule.matches)(expression) {
             rules.push(Match {
-                rule: *rule,
+                rule,
                 result
             });
         }
