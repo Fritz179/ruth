@@ -1,4 +1,4 @@
-use crate::{operations::Exponentiation, Addition, Expressions, InnerExpressions, Multiplication, Rule};
+use crate::{operations::{Exponentiation, Subtraction}, Addition, Expressions, InnerExpressions, Multiplication, Natural, Rule};
 
 use super::operations::OperationTrait;
 
@@ -16,18 +16,39 @@ static DISTRIBUTIVITY: Rule = Rule {
     description: "x * (a + b) = x * a + x * b"
 };
 
-// static EXPONENT_TO_MULTIPLICATION: Rule = Rule {
-//     matches: &|expression: &Expressions| {
-//         let exp = expression.is_exponentiation()?;
+static EXPONENT_TO_MULTIPLICATION: Rule = Rule {
+    matches: &|expression: &Expressions| {
+        let exp = expression.is_exponentiation()?;
 
-//         Some(Exponentiation {
-//             left: exp.left, 
-//             right: ::new(mul.left, add.left).into()
-//         }.into())
-//     },
-//     name: "EXPONENT_TO_MULTIPLICATION",
-//     description: "(a + b) ** x = (a + b) * (a + b) ** (x - 1))"
-// };
+        Some(Multiplication {
+            left: exp.left.clone(), 
+            right: Exponentiation {
+                left: exp.left,
+                right: Subtraction {
+                    left: exp.right.clone().into(),
+                    right: Natural::new(1).into()
+                }.into()
+            }.into()
+        }.into())
+    },
+    name: "EXPONENT_TO_MULTIPLICATION",
+    description: "a ** x = a * a ** (x - 1))"
+};
+
+static EXPONENT_IDENTITY: Rule = Rule {
+    matches: &|expression: &Expressions| {
+        let exp = expression.is_exponentiation()?;
+        let power = exp.right.is_zahl()?;
+
+        if power.get() == 1 {
+            Some(exp.left.copy().to_inner())
+        } else {
+            None
+        }
+    },
+    name: "Exponent Identity",
+    description: "a ** 1 = 1, a ** 1 = a"
+};
 
 static CONST_EVALUATION: Rule = Rule {
     matches: &|expression: &Expressions| {
@@ -43,9 +64,11 @@ static CONST_EVALUATION: Rule = Rule {
     description: "1 + 1 = 2"
 };
 
-static RULES: [&Rule; 2] = [
+static RULES: [&Rule; 4] = [
     &DISTRIBUTIVITY, 
-    &CONST_EVALUATION
+    &CONST_EVALUATION,
+    &EXPONENT_TO_MULTIPLICATION,
+    &EXPONENT_IDENTITY
 ];
 
 pub struct Match {

@@ -1,5 +1,5 @@
 use crate::operations::{Add, Exp, Mul, Sub, TypeAdd, TypeExp, TypeMul, TypeSub};
-use super::{zahl::InnerZahl, Types, Value};
+use super::{zahl::InnerZahl, Types, Value, MyFrom, MyInto};
 
 #[derive(Debug, Clone)]
 pub struct InnerReal(f32);
@@ -26,9 +26,15 @@ impl Real {
     }
 }
 
-impl<T: Into<InnerZahl>> From<T> for InnerReal {
-    fn from(value: T) -> Self {
-        InnerReal::new(value.into().get() as f32)
+impl<From: MyInto<InnerZahl>> MyFrom<From> for InnerReal {
+    fn my_from(from: From) -> InnerReal {
+        Self::new(from.my_into().get() as f32)
+    }
+}
+
+impl MyFrom<InnerReal> for InnerReal {
+    fn my_from(from: InnerReal) -> Self {
+        from
     }
 }
 
@@ -43,8 +49,8 @@ impl Add for InnerReal {
 impl TypeAdd for Real {
     fn type_add(self, rhs: Types) -> Result<Types, String> {
         match rhs {
-            Types::Natural(rhs) => self.add(rhs.enlarge()),
-            Types::Zahl(rhs) => self.add(rhs.enlarge()),
+            Types::Natural(rhs) => self.add(rhs.my_into()),
+            Types::Zahl(rhs) => self.add(rhs.my_into()),
             Types::Real(rhs) => self.add(rhs),
         }
     }
@@ -61,8 +67,8 @@ impl Sub for InnerReal {
 impl TypeSub for Real {
     fn type_sub(self, rhs: Types) -> Result<Types, String> {
         match rhs {
-            Types::Natural(rhs) => self.sub(rhs.enlarge()),
-            Types::Zahl(rhs) => self.sub(rhs.enlarge()),
+            Types::Natural(rhs) => self.sub(rhs.my_into()),
+            Types::Zahl(rhs) => self.sub(rhs.my_into()),
             Types::Real(rhs) => self.sub(rhs),
         }
     }
@@ -79,8 +85,8 @@ impl Mul for InnerReal {
 impl TypeMul for Real {
     fn type_mul(self, rhs: Types) -> Result<Types, String> {
         match rhs {
-            Types::Natural(rhs) => self.mul(rhs.enlarge()),
-            Types::Zahl(rhs) => self.mul(rhs.enlarge()),
+            Types::Natural(rhs) => self.mul(rhs.my_into()),
+            Types::Zahl(rhs) => self.mul(rhs.my_into()),
             Types::Real(rhs) => self.mul(rhs),
         }
     }
@@ -97,8 +103,8 @@ impl Exp for InnerReal {
 impl TypeExp for Real {
     fn type_exp(self, rhs: Types) -> Result<Types, String> {
         match rhs {
-            Types::Natural(rhs) => self.exp(rhs.enlarge()),
-            Types::Zahl(rhs) => self.exp(rhs.enlarge()),
+            Types::Natural(rhs) => self.exp(rhs.my_into()),
+            Types::Zahl(rhs) => self.exp(rhs.my_into()),
             Types::Real(rhs) => self.exp(rhs),
         }
     }

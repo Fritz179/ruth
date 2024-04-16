@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use crate::InnerZahl;
-use crate::{Expressions, Types, Value};
+use crate::Zahl;
+use crate::{Expressions, Types, Value, MyInto};
 use super::BinaryOperation;
 
 use super::OperationTrait;
@@ -59,9 +59,9 @@ impl OperationTrait for Subtraction {
 
     fn solve(&self) -> Result<Types, String> {
         match self.left.solve()? {
-            Types::Natural(left) => Ok((left.enlarge::<InnerZahl>().type_sub(self.right.solve()?))?),
-            Types::Real(left) => Ok((left.type_sub(self.right.solve()?))?),
+            Types::Natural(left) => Ok((MyInto::<Zahl>::my_into(left).type_sub(self.right.solve()?))?),
             Types::Zahl(left) => Ok((left.type_sub(self.right.solve()?))?),
+            Types::Real(left) => Ok((left.type_sub(self.right.solve()?))?),
         }
     }
 }

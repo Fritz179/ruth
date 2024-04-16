@@ -32,18 +32,24 @@ impl<T> Value<T> {
     }
 }
 
-impl<T: Debug> Value<T> {
-    fn from_smaller<O>(from: Value<O>) -> Self where O: Into<T> {
-        match from {
-            Value::Constant(inner) => Value::Constant(inner.into()),
-            Value::Variable(name) => Value::Variable(name.clone()),
-            Value::Expression(expression) => Value::Expression(expression.clone()),
-        }
-    }
+pub trait MyFrom<From> {
+    fn my_from(from: From) -> Self;
+}
 
-    pub fn enlarge<O>(self) -> Value<O> where T: Into<O> {
-        match self {
-            Value::Constant(inner) => Value::Constant(inner.into()),
+pub trait MyInto<Into> {
+    fn my_into(self) -> Into;
+}
+
+impl<From, Into> MyInto<Into> for From where Into: MyFrom<From> {
+    fn my_into(self) -> Into {
+        Into::my_from(self)
+    }
+} 
+
+impl<T, O> MyFrom<Value<T>> for Value<O> where T: MyInto<O> {
+    fn my_from(from: Value<T>) -> Self {
+        match from {
+            Value::Constant(inner) => Value::Constant(inner.my_into()),
             Value::Variable(name) => Value::Variable(name.clone()),
             Value::Expression(expression) => Value::Expression(expression.clone()),
         }

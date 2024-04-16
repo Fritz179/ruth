@@ -1,5 +1,5 @@
-use crate::operations::{Add, Exp, Mul, TypeAdd, TypeExp, TypeMul};
-use super::{real::InnerReal, zahl::InnerZahl, Types, Value};
+use crate::{operations::{Add, Exp, Mul, TypeAdd, TypeExp, TypeMul}, Real, Zahl};
+use super::{Types, Value, MyFrom, MyInto};
 
 #[derive(Debug, Clone)]
 pub struct InnerNatural(u32);
@@ -26,6 +26,12 @@ impl Natural {
     }
 }
 
+impl MyFrom<InnerNatural> for InnerNatural {
+    fn my_from(from: InnerNatural) -> Self {
+        from
+    }
+}
+
 impl Add for InnerNatural {
     type Output = Natural;
 
@@ -38,8 +44,8 @@ impl TypeAdd for Natural {
     fn type_add(self, rhs: Types) -> Result<Types, String> {
         match rhs {
             Types::Natural(rhs) => self.add(rhs),
-            Types::Zahl(rhs) => self.enlarge::<InnerZahl>().add(rhs),
-            Types::Real(rhs) => self.enlarge::<InnerReal>().add(rhs),
+            Types::Zahl(rhs) => MyInto::<Zahl>::my_into(self).add(rhs),
+            Types::Real(rhs) => MyInto::<Real>::my_into(self).add(rhs),
         }
     }
 }
@@ -56,8 +62,8 @@ impl TypeMul for Natural {
     fn type_mul(self, rhs: Types) -> Result<Types, String> {
         match rhs {
             Types::Natural(rhs) => self.mul(rhs),
-            Types::Zahl(rhs) => self.enlarge::<InnerZahl>().mul(rhs),
-            Types::Real(rhs) => self.enlarge::<InnerReal>().mul(rhs),
+            Types::Zahl(rhs) => MyInto::<Zahl>::my_into(self).mul(rhs),
+            Types::Real(rhs) => MyInto::<Real>::my_into(self).mul(rhs),
         }
     }
 }
@@ -74,8 +80,8 @@ impl TypeExp for Natural {
     fn type_exp(self, rhs: Types) -> Result<Types, String> {
         match rhs {
             Types::Natural(rhs) => self.exp(rhs),
-            Types::Zahl(rhs) => self.enlarge::<InnerZahl>().exp(rhs),
-            Types::Real(rhs) => self.enlarge::<InnerReal>().exp(rhs),
+            Types::Zahl(rhs) => MyInto::<Real>::my_into(self).exp(MyInto::<Real>::my_into(rhs)),
+            Types::Real(rhs) => MyInto::<Real>::my_into(self).exp(rhs),
         }
     }
 }
