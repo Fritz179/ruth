@@ -4,7 +4,7 @@ mod types;
 use types::*;
 
 pub mod operations;
-use operations::{Addition, Multiplication, Operation, OperationTrait, BinaryOperation};
+use operations::{Addition, BinaryOperation, Exponentiation, Multiplication, Operation, OperationTrait};
 
 mod rules;
 
@@ -258,8 +258,12 @@ static COMMANDS: [&Command; 6] = [
 ];
 
 fn main() {
-    let equation: Expressions = Multiplication::new(Real::new(2.0).into(), Addition::new(Real::new(3.0).into(), Real::new(4.0).into()).into()).into();
-    
+    // let equation: Expressions = Multiplication::new(Natural::new(2).into(), Addition::new(Real::new(3.0).into(), Real::new(4.0).into()).into()).into();
+    let equation: Expressions = Exponentiation::new(
+        Addition::new(Real::new_variable("b").into(), Real::new_variable("c").into()).into(),
+        Natural::new_variable("a").into(), 
+    ).into();
+
     let mut state = State {
         history: vec![equation.copy()],
         selection: equation.clone(),

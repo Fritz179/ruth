@@ -16,6 +16,10 @@ pub enum Value<T> {
 }
 
 impl<T> Value<T> {
+    pub fn new_variable(name: &str) -> Self {
+        Value::Variable(name.to_string())
+    }
+
     pub fn is_value(&self) -> bool {
         matches!(self, Value::Constant(_))
     }

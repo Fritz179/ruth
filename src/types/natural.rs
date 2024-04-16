@@ -1,4 +1,4 @@
-use crate::operations::{Add, Mul, TypeAdd, TypeMul};
+use crate::operations::{Add, Exp, Mul, TypeAdd, TypeExp, TypeMul};
 use super::{real::{InnerReal, Real}, Types, Value};
 
 #[derive(Debug, Clone)]
@@ -42,7 +42,6 @@ impl Add<InnerReal> for InnerNatural {
     }
 }
 
-
 impl TypeAdd for Natural {
     fn type_add(self, rhs: Types) -> Result<Types, String> {
         match rhs {
@@ -73,6 +72,31 @@ impl TypeMul for Natural {
         match rhs {
             Types::Natural(rhs) => self.mul(rhs),
             Types::Real(rhs) => self.mul(rhs),
+        }
+    }
+}
+
+impl Exp for InnerNatural {
+    type Output = Natural;
+
+    fn exp(self, rhs: Self) -> Result<Self::Output, String> {
+        Ok(Natural::new((self.get()).pow(rhs.get())))
+    }
+}
+
+impl Exp<InnerReal> for InnerNatural {
+    type Output = Real;
+
+    fn exp(self, rhs: InnerReal) -> Result<Self::Output, String> {
+        Ok(Real::new((self.get() as f32).powf(rhs.get())))
+    }
+}
+
+impl TypeExp for Natural {
+    fn type_exp(self, rhs: Types) -> Result<Types, String> {
+        match rhs {
+            Types::Natural(rhs) => self.exp(rhs),
+            Types::Real(rhs) => self.exp(rhs),
         }
     }
 }

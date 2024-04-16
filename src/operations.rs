@@ -1,11 +1,15 @@
-mod addition;
 use std::fmt::Display;
 
+mod addition;
 pub use addition::*;
 
 mod multiplication;
-use enum_dispatch::enum_dispatch;
 pub use multiplication::*;
+
+mod exponention;
+pub use exponention::*;
+
+use enum_dispatch::enum_dispatch;
 
 use crate::{Expressions, InnerExpressions, Types};
 
@@ -31,6 +35,7 @@ impl<T: Into<Operation>> From<T> for InnerExpressions {
 pub enum Operation {
     Addition(Addition),
     Multiplication(Multiplication),
+    Exponentiation(Exponentiation),
 }
 
 impl Display for Operation {
@@ -38,6 +43,7 @@ impl Display for Operation {
         match self {
             Operation::Addition(addition) => Display::fmt(&addition, f),
             Operation::Multiplication(multiplication) => Display::fmt(&multiplication, f),
+            Operation::Exponentiation(exponention) => Display::fmt(&exponention, f),
         }
     }
 }
