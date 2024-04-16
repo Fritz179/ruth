@@ -1,6 +1,9 @@
 mod real;
 pub use real::Real;
 
+mod natural;
+pub use natural::Natural;
+
 use std::fmt::{Debug, Display};
 
 use crate::{Expressions, InnerExpressions};
@@ -31,6 +34,7 @@ impl<T> From<T> for Value<T> {
 #[derive(Debug, Clone)]
 pub enum Types {
     Real(Real),
+    Natural(Natural),
 }
 
 impl<T: Display> Display for Value<T> {
@@ -47,6 +51,7 @@ impl Display for Types {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Types::Real(real) => Display::fmt(&real, f),
+            Types::Natural(real) => Display::fmt(&real, f),
         }
     }
 }
@@ -55,18 +60,21 @@ impl Types {
     pub fn get_type(&self) -> &str {
         match self {
             Types::Real(real) => real.get_type(),
+            Types::Natural(real) => real.get_type(),
         }
     }
 
     pub fn is_value(&self) -> bool {
         match self {
             Types::Real(real) => real.is_value(),
+            Types::Natural(real) => real.is_value(),
         }
     }
 
     pub fn is_variable(&self) -> bool {
         match self {
             Types::Real(real) => real.is_variable(),
+            Types::Natural(real) => real.is_variable(),
         }
     }
 

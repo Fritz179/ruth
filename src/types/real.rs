@@ -1,12 +1,23 @@
-use crate::{Add, Mul, TypeAdd, TypeMul, Types, Value};
+use crate::operations::{Add, Mul, TypeAdd, TypeMul};
+use super::{Types, Value, natural::InnerNatural};
 
 #[derive(Debug, Clone)]
-pub struct InnerReal(f64);
+pub struct InnerReal(f32);
+
+impl InnerReal {
+    pub fn new(value: f32) -> Self {
+        Self(value)
+    }
+
+    pub fn get(&self) -> f32 {
+        self.0
+    }
+}
 
 pub type Real = Value<InnerReal>;
 
 impl Real {
-    pub fn new(value: f64) -> Self {
+    pub fn new(value: f32) -> Self {
         Self::Constant(InnerReal(value))
     }
 
@@ -23,9 +34,18 @@ impl Add for InnerReal {
     }
 }
 
+impl Add<InnerNatural> for InnerReal {
+    type Output = Real;
+
+    fn add(self, rhs: InnerNatural) -> Result<Self::Output, String> {
+        Ok(Real::new(self.get() + rhs.get() as f32))
+    }
+}
+
 impl TypeAdd for Real {
     fn type_add(self, rhs: Types) -> Result<Types, String> {
         match rhs {
+            Types::Natural(rhs) => self.add(rhs),
             Types::Real(rhs) => self.add(rhs),
         }
     }
@@ -39,10 +59,19 @@ impl Mul for InnerReal {
     }
 }
 
+impl Mul<InnerNatural> for InnerReal {
+    type Output = Real;
+
+    fn mul(self, rhs: InnerNatural) -> Result<Self::Output, String> {
+        Ok(Real::new(self.0 * rhs.get() as f32))
+    }
+}
+
 
 impl TypeMul for Real {
     fn type_mul(self, rhs: Types) -> Result<Types, String> {
         match rhs {
+            Types::Natural(rhs) => self.mul(rhs),
             Types::Real(rhs) => self.mul(rhs),
         }
     }

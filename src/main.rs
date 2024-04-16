@@ -3,8 +3,8 @@ use std::{cell::RefCell, fmt::{Debug, Display}, ops::Deref, rc::Rc};
 mod types;
 use types::*;
 
-mod operations;
-use operations::*;
+pub mod operations;
+use operations::{Addition, Multiplication, Operation, OperationTrait, BinaryOperation};
 
 mod rules;
 

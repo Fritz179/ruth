@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
-use crate::{BinaryOperation, Expressions, Operation, Types, Value};
+use crate::{Expressions, Operation, Types, Value};
+use super::BinaryOperation;
 
 use super::OperationTrait;
 
@@ -64,6 +65,7 @@ impl OperationTrait for Addition {
     fn solve(&self) -> Result<Types, String> {
         match self.left.solve()? {
             Types::Real(left) => Ok((left.type_add(self.right.solve()?))?),
+            Types::Natural(left) => Ok((left.type_add(self.right.solve()?))?),
         }
     }
 }

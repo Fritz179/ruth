@@ -1,4 +1,6 @@
-use crate::{Addition, Expressions, InnerExpressions, Multiplication, OperationTrait, Rule};
+use crate::{Addition, Expressions, InnerExpressions, Multiplication, Rule};
+
+use super::operations::OperationTrait;
 
 static DISTRIBUTIVITY: Rule = Rule {
     matches: &|expression: &Expressions| {

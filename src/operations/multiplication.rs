@@ -70,6 +70,7 @@ impl OperationTrait for Multiplication {
     fn solve(&self) -> Result<Types, String> {
         match self.left.solve()? {
             Types::Real(left) => Ok((left.type_mul(self.right.solve()?))?),
+            Types::Natural(left) => Ok((left.type_mul(self.right.solve()?))?),
         }
     }
 }
