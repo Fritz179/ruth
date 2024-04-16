@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{Expressions, Operation, Types, Value};
+use crate::{Expressions, Types, Value};
 
 use super::OperationTrait;
 
@@ -39,12 +39,6 @@ pub struct Multiplication {
 impl Multiplication {
     pub fn new(left: Expressions, right: Expressions) -> Self {
         Self { left, right }
-    }
-}
-
-impl From<Multiplication> for Operation {
-    fn from(multiplication: Multiplication) -> Self {
-        Operation::Multiplication(multiplication)
     }
 }
 

@@ -4,10 +4,12 @@ use std::fmt::Display;
 pub use addition::*;
 
 mod multiplication;
+use enum_dispatch::enum_dispatch;
 pub use multiplication::*;
 
 use crate::{Expressions, InnerExpressions, Types};
 
+#[enum_dispatch]
 pub trait OperationTrait: Into<Operation> + Display {
     fn get_children(&self) -> Vec<Expressions>;
     fn copy(&self) -> Expressions;
@@ -25,6 +27,7 @@ impl<T: Into<Operation>> From<T> for InnerExpressions {
 }
 
 #[derive(Debug, Clone)]
+#[enum_dispatch(OperationTrait)]
 pub enum Operation {
     Addition(Addition),
     Multiplication(Multiplication),
@@ -35,29 +38,6 @@ impl Display for Operation {
         match self {
             Operation::Addition(addition) => Display::fmt(&addition, f),
             Operation::Multiplication(multiplication) => Display::fmt(&multiplication, f),
-        }
-    }
-}
-
-impl OperationTrait for Operation {
-    fn copy(&self) -> Expressions {
-        match self {
-            Operation::Addition(addition) => addition.copy(),
-            Operation::Multiplication(multiplication) => multiplication.copy(),
-        }
-    }
-
-    fn get_children(&self) -> Vec<Expressions> {
-        match self {
-            Operation::Addition(addition) => addition.get_children(),
-            Operation::Multiplication(multiplication) => multiplication.get_children(),
-        }
-    }
-
-    fn solve(&self) -> Result<Types, String> {
-        match self {
-            Operation::Addition(addition) => addition.solve(),
-            Operation::Multiplication(multiplication) => multiplication.solve(),
         }
     }
 }

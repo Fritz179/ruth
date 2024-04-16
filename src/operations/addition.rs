@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{Expressions, Operation, Types, Value};
+use crate::{Expressions, Types, Value};
 use super::BinaryOperation;
 
 use super::OperationTrait;
@@ -35,12 +35,6 @@ pub trait TypeAdd {
 pub struct Addition {
     pub left: Expressions,
     pub right: Expressions,
-}
-
-impl From<Addition> for Operation {
-    fn from(addition: Addition) -> Self {
-        Operation::Addition(addition)
-    }
 }
 
 impl Display for Addition {
