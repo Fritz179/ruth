@@ -1,13 +1,33 @@
 use std::fmt::Display;
 
-use crate::{Expressions, Operation, Types};
+use crate::{Expressions, Operation, Types, Value};
 
 use super::OperationTrait;
 
 pub trait Mul<Rhs = Self> {
     type Output;
 
-    fn mul(self, other: Rhs) -> Self::Output;
+    fn mul(self, other: Rhs) -> Result<Self::Output, String>;
+}
+
+impl<L, R, O> Mul<Value<R>> for Value<L> where
+    Value<L>: Into<Expressions>,
+    Value<R>: Into<Expressions>,
+    Value<O>: Into<Types>,
+    L: Mul<R, Output = Value<O>>,
+{
+    type Output = Types;
+
+    fn mul(self, rhs: Value<R>) -> Result<Self::Output, String> {
+        match (self, rhs) {
+            (Value::<L>::Constant(lhs), Value::<R>::Constant(rhs)) => Ok((lhs.mul(rhs))?.into()),
+            (lhs, rhs) => Ok(Value::<O>::Expression(Multiplication::new(lhs.into(), rhs.into()).into()).into()),
+        }
+    }
+}
+
+pub trait TypeMul {
+    fn type_mul(self, right: Types) -> Result<Types, String>;
 }
 
 #[derive(Debug, Clone)]
@@ -47,9 +67,9 @@ impl OperationTrait for Multiplication {
         Multiplication::new(self.left.copy(), self.right.copy()).into()
     }
 
-    fn solve(&self) -> crate::Types {
-        match (self.left.solve(), self.right.solve()) {
-            (Types::Real(left), Types::Real(right)) => (left.mul(right)).into(),
+    fn solve(&self) -> Result<Types, String> {
+        match self.left.solve()? {
+            Types::Real(left) => Ok((left.type_mul(self.right.solve()?))?),
         }
     }
 }

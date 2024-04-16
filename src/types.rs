@@ -7,23 +7,40 @@ use crate::{Expressions, InnerExpressions};
 
 #[derive(Debug, Clone)]
 pub enum Value<T> {
-    Value(T),
+    Constant(T),
     Variable(String),
+    Expression(Expressions),
 }
 
 impl<T> Value<T> {
     pub fn is_value(&self) -> bool {
-        matches!(self, Value::Value(_))
+        matches!(self, Value::Constant(_))
     }
 
     pub fn is_variable(&self) -> bool {
-        matches!(self, Value::Value(_))
+        matches!(self, Value::Constant(_))
+    }
+}
+
+impl<T> From<T> for Value<T> {
+    fn from(t: T) -> Self {
+        Value::Constant(t)
     }
 }
 
 #[derive(Debug, Clone)]
 pub enum Types {
     Real(Real),
+}
+
+impl<T: Display> Display for Value<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::<T>::Constant(inner) => Display::fmt(&inner, f),
+            Value::<T>::Variable(name) => Display::fmt(&name, f),
+            Value::<T>::Expression(expression) => Display::fmt(&expression, f),
+        }
+    }
 }
 
 impl Display for Types {
@@ -68,6 +85,12 @@ impl Types {
 
 impl From<Types> for InnerExpressions {
     fn from(t: Types) -> Self {
-        InnerExpressions::Type(t.into())
+        InnerExpressions::Type(t)
+    }
+}
+
+impl<T> From<Value<T>> for InnerExpressions where Value<T>: Into<Types> {
+    fn from(real: Value<T>) -> Self {
+        InnerExpressions::Type(real.into())
     }
 }

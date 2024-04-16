@@ -29,7 +29,7 @@ impl Display for Expressions {
         if f.alternate() {
             match self.0.as_ref().borrow().deref() {
                 InnerExpressions::Type(types) => write!(f, "({:#}: {})", types, types.get_type()),
-                InnerExpressions::Operation(operation) => write!(f, "({:#}: {})", operation, operation.solve().get_type()),
+                InnerExpressions::Operation(operation) => write!(f, "({:#}: {})", operation, operation.solve().unwrap().get_type()),
             }
         } else {
             match self.0.as_ref().borrow().deref() {
@@ -55,9 +55,9 @@ impl Expressions {
         }
     }
 
-    fn solve(&self) -> Types {
+    fn solve(&self) -> Result<Types, String> {
         match self.0.as_ref().borrow().deref() {
-            InnerExpressions::Type(types) => types.solve(),
+            InnerExpressions::Type(types) => Ok(types.solve()),
             InnerExpressions::Operation(opeartion) => opeartion.solve(),
         }
     }

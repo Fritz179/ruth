@@ -54,7 +54,7 @@ impl Display for ConstEvaluation {
 impl Rule for ConstEvaluation {
     fn matches(expression: &Expressions) -> Option<Self> {
         if let InnerExpressions::Operation(operation) = expression.0.as_ref().borrow().deref() {
-            let result = operation.solve();
+            let result = operation.solve().unwrap();
 
             if result.is_value() {
                 return Some(ConstEvaluation {
@@ -67,7 +67,7 @@ impl Rule for ConstEvaluation {
     }
 
     fn apply(&self) -> InnerExpressions {
-        return self.result.clone().into();
+        self.result.clone().into()
     }
 }
 

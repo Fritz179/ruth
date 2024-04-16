@@ -6,12 +6,12 @@ pub use addition::*;
 mod multiplication;
 pub use multiplication::*;
 
-use crate::{Expressions, InnerExpressions};
+use crate::{Expressions, InnerExpressions, Types};
 
 pub trait OperationTrait: Into<Operation> + Display {
     fn get_children(&self) -> Vec<Expressions>;
     fn copy(&self) -> Expressions;
-    fn solve(&self) -> crate::Types;
+    fn solve(&self) -> Result<Types, String>;
 }
 
 pub trait BinaryOperation: OperationTrait {
@@ -54,7 +54,7 @@ impl OperationTrait for Operation {
         }
     }
 
-    fn solve(&self) -> crate::Types {
+    fn solve(&self) -> Result<Types, String> {
         match self {
             Operation::Addition(addition) => addition.solve(),
             Operation::Multiplication(multiplication) => multiplication.solve(),
