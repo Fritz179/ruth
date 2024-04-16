@@ -3,6 +3,9 @@ use std::fmt::Display;
 mod addition;
 pub use addition::*;
 
+mod subtraction;
+pub use subtraction::*;
+
 mod multiplication;
 pub use multiplication::*;
 
@@ -36,6 +39,7 @@ pub enum Operation {
     Addition(Addition),
     Multiplication(Multiplication),
     Exponentiation(Exponentiation),
+    Subtraction(Subtraction),
 }
 
 impl Display for Operation {
@@ -44,6 +48,7 @@ impl Display for Operation {
             Operation::Addition(addition) => Display::fmt(&addition, f),
             Operation::Multiplication(multiplication) => Display::fmt(&multiplication, f),
             Operation::Exponentiation(exponention) => Display::fmt(&exponention, f),
+            Operation::Subtraction(subtraction) => Display::fmt(&subtraction, f),
         }
     }
 }

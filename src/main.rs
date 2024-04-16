@@ -4,7 +4,7 @@ mod types;
 use types::*;
 
 pub mod operations;
-use operations::{Addition, BinaryOperation, Exponentiation, Multiplication, Operation, OperationTrait};
+use operations::{Addition, BinaryOperation, Exponentiation, Multiplication, Operation, OperationTrait, Subtraction};
 
 mod rules;
 
@@ -48,6 +48,13 @@ impl Expressions {
     fn is_multiplication(&self) -> Option<Multiplication> {
         match self.0.as_ref().borrow().deref() {
             InnerExpressions::Operation(Operation::Multiplication(multiplication)) => Some(multiplication.clone()),
+            _ => None,
+        }
+    }
+
+    fn is_exponentiation(&self) -> Option<Exponentiation> {
+        match self.0.as_ref().borrow().deref() {
+            InnerExpressions::Operation(Operation::Exponentiation(exponentiation)) => Some(exponentiation.clone()),
             _ => None,
         }
     }
@@ -239,7 +246,7 @@ static RULES_COMMAND: Command = Command {
 };
 
 static EXIT_COMMAND: Command = Command {
-    name: "exit | quit | q",
+    name: "q",
     description: "Exits the program",
     usage: "",
 
@@ -259,10 +266,13 @@ static COMMANDS: [&Command; 6] = [
 
 fn main() {
     // let equation: Expressions = Multiplication::new(Natural::new(2).into(), Addition::new(Real::new(3.0).into(), Real::new(4.0).into()).into()).into();
+    
     let equation: Expressions = Exponentiation::new(
         Addition::new(Real::new_variable("b").into(), Real::new_variable("c").into()).into(),
-        Natural::new_variable("a").into(), 
+        Natural::new_variable("2").into(), 
     ).into();
+
+    // let equation: Expressions = Subtraction::new(Natural::new(5).into(), Natural::new(6).into()).into();
 
     let mut state = State {
         history: vec![equation.copy()],

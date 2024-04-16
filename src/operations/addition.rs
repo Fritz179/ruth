@@ -60,6 +60,7 @@ impl OperationTrait for Addition {
         match self.left.solve()? {
             Types::Real(left) => Ok((left.type_add(self.right.solve()?))?),
             Types::Natural(left) => Ok((left.type_add(self.right.solve()?))?),
+            Types::Zahl(left) => Ok((left.type_add(self.right.solve()?))?),
         }
     }
 }

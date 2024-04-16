@@ -60,6 +60,7 @@ impl OperationTrait for Exponentiation {
         match self.left.solve()? {
             Types::Real(left) => Ok((left.type_exp(self.right.solve()?))?),
             Types::Natural(left) => Ok((left.type_exp(self.right.solve()?))?),
+            Types::Zahl(left) => Ok((left.type_exp(self.right.solve()?))?),
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::{Addition, Expressions, InnerExpressions, Multiplication, Rule};
+use crate::{operations::Exponentiation, Addition, Expressions, InnerExpressions, Multiplication, Rule};
 
 use super::operations::OperationTrait;
 
@@ -15,6 +15,19 @@ static DISTRIBUTIVITY: Rule = Rule {
     name: "Distributivity",
     description: "x * (a + b) = x * a + x * b"
 };
+
+// static EXPONENT_TO_MULTIPLICATION: Rule = Rule {
+//     matches: &|expression: &Expressions| {
+//         let exp = expression.is_exponentiation()?;
+
+//         Some(Exponentiation {
+//             left: exp.left, 
+//             right: ::new(mul.left, add.left).into()
+//         }.into())
+//     },
+//     name: "EXPONENT_TO_MULTIPLICATION",
+//     description: "(a + b) ** x = (a + b) * (a + b) ** (x - 1))"
+// };
 
 static CONST_EVALUATION: Rule = Rule {
     matches: &|expression: &Expressions| {
