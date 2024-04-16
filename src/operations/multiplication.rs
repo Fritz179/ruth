@@ -1,6 +1,14 @@
 use std::fmt::Display;
 
-use crate::{Expression, Expressions, InnerExpressions};
+use crate::{Expressions, Operation, Types};
+
+use super::OperationTrait;
+
+pub trait Mul<Rhs = Self> {
+    type Output;
+
+    fn mul(self, other: Rhs) -> Self::Output;
+}
 
 #[derive(Debug, Clone)]
 pub struct Multiplication {
@@ -14,19 +22,23 @@ impl Multiplication {
     }
 }
 
-impl From<Multiplication> for Expressions {
+impl From<Multiplication> for Operation {
     fn from(multiplication: Multiplication) -> Self {
-        Expressions::new(InnerExpressions::Multiplication(multiplication))
+        Operation::Multiplication(multiplication)
     }
 }
 
 impl Display for Multiplication {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({} * {})", self.left, self.right)
+        if f.alternate() {
+            write!(f, "({:#} * {:#})", self.left, self.right)
+        } else {
+            write!(f, "({} * {})", self.left, self.right)
+        }
     }
 }
 
-impl Expression for Multiplication {
+impl OperationTrait for Multiplication {
     fn get_children(&self) -> Vec<Expressions> {
         vec![self.left.clone(), self.right.clone()]
     }
@@ -36,6 +48,8 @@ impl Expression for Multiplication {
     }
 
     fn solve(&self) -> crate::Types {
-        todo!()
+        match (self.left.solve(), self.right.solve()) {
+            (Types::Real(left), Types::Real(right)) => (left.mul(right)).into(),
+        }
     }
 }

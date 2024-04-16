@@ -1,33 +1,58 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Display;
 
-use crate::{Add, Types, Value};
+use crate::{Add, Addition, BinaryOperation, InnerExpressions, Mul, Multiplication, Types, Value};
 
-#[derive(Debug, Clone)]
-pub struct InnerReal(pub f64);
-pub type Real = Value<InnerReal>;
+pub type Real = Value<f64>;
 
 impl Real {
     pub fn new(value: f64) -> Self {
-        Self::Value(InnerReal(value))
+        Self::Value(value)
+    }
+
+    pub fn get_type(&self) -> &str {
+        "Real"
     }
 }
 
-impl Add for InnerReal {
+impl Add for Real {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        InnerReal(self.0 + rhs.0)
+        match (self, rhs) {
+            (Real::Value(lhs), Real::Value(rhs)) => Real::Value(lhs + rhs),
+            (lhs, rhs) => Real::Variable(format!("{}", Addition::new(lhs.into(), rhs.into()))),
+        }
     }
 }
 
-impl Display for InnerReal {
+impl Mul for Real {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Real::Value(lhs), Real::Value(rhs)) => Real::Value(lhs * rhs),
+            (lhs, rhs) => Real::Variable(format!("{}", Multiplication::new(lhs.into(), rhs.into()))),
+        }
+    }
+}
+
+impl Display for Real {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({})", self.0)
+        match self {
+            Real::Value(value) => write!(f, "{}", value),
+            Real::Variable(name) => write!(f, "{}", name),
+        }
     }
 }
 
 impl From<Real> for Types {
     fn from(real: Real) -> Self {
         Types::Real(real)
+    }
+}
+
+impl From<Real> for InnerExpressions {
+    fn from(real: Real) -> Self {
+        InnerExpressions::Type(Types::Real(real))
     }
 }

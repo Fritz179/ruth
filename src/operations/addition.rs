@@ -1,6 +1,14 @@
 use std::fmt::Display;
 
-use crate::{Expression, Expressions, InnerExpressions, Types, Add};
+use crate::{BinaryOperation, Expressions, Operation, Types};
+
+use super::OperationTrait;
+
+pub trait Add<Rhs = Self> {
+    type Output;
+
+    fn add(self, other: Rhs) -> Self::Output;
+}
 
 #[derive(Debug, Clone)]
 pub struct Addition {
@@ -8,25 +16,23 @@ pub struct Addition {
     pub right: Expressions,
 }
 
-impl Addition {
-    pub fn new(left: Expressions, right: Expressions) -> Self {
-        Self { left, right }
-    }
-}
-
-impl From<Addition> for Expressions {
+impl From<Addition> for Operation {
     fn from(addition: Addition) -> Self {
-        Expressions::new(InnerExpressions::Addition(addition))
+        Operation::Addition(addition)
     }
 }
 
 impl Display for Addition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({} + {})", self.left, self.right)
+        if f.alternate() {
+            write!(f, "({:#} + {:#})", self.left, self.right)
+        } else {
+            write!(f, "({} + {})", self.left, self.right)
+        }
     }
 }
 
-impl Expression for Addition {
+impl OperationTrait for Addition {
     fn get_children(&self) -> Vec<Expressions> {
         vec![self.left.clone(), self.right.clone()]
     }
@@ -38,7 +44,12 @@ impl Expression for Addition {
     fn solve(&self) -> Types {
         match (self.left.solve(), self.right.solve()) {
             (Types::Real(left), Types::Real(right)) => (left.add(right)).into(),
-            _ => panic!("Invalid addition")
         }
+    }
+}
+
+impl BinaryOperation for Addition {
+    fn new(left: Expressions, right: Expressions) -> Self {
+        Self { left, right }
     }
 }

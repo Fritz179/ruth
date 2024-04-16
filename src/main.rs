@@ -9,18 +9,10 @@ use operations::*;
 mod rules;
 use rules::*;
 
-trait Expression: Display + Debug + Clone {
-    fn get_children(&self) -> Vec<Expressions>;
-    fn copy(&self) -> Expressions;
-
-    fn solve(&self) -> Types;
-}
-
 #[derive(Debug, Clone)]
 enum InnerExpressions {
     Type(Types),
-    Addition(Addition),
-    Multiplication(Multiplication),
+    Operation(Operation),
 }
 
 #[derive(Debug, Clone)]
@@ -34,54 +26,52 @@ impl Expressions {
 
 impl Display for Expressions {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.0.as_ref().borrow().deref() {
-            InnerExpressions::Type(types) => Display::fmt(&types, f),
-            InnerExpressions::Addition(addition) => Display::fmt(&addition, f),
-            InnerExpressions::Multiplication(multiplication) => Display::fmt(&multiplication, f),
+        if f.alternate() {
+            match self.0.as_ref().borrow().deref() {
+                InnerExpressions::Type(types) => write!(f, "({:#}: {})", types, types.get_type()),
+                InnerExpressions::Operation(operation) => write!(f, "({:#}: {})", operation, operation.solve().get_type()),
+            }
+        } else {
+            match self.0.as_ref().borrow().deref() {
+                InnerExpressions::Type(types) => write!(f, "{}", types),
+                InnerExpressions::Operation(operation) => write!(f, "{}", operation),
+            }
         }
     }
 }
 
-impl Expression for Expressions {
+impl Expressions {
     fn get_children(&self) -> Vec<Expressions> {
         match self.0.as_ref().borrow().deref() {
             InnerExpressions::Type(types) => types.get_children(),
-            InnerExpressions::Addition(addition) => addition.get_children(),
-            InnerExpressions::Multiplication(multiplication) => multiplication.get_children(),
+            InnerExpressions::Operation(operation) => operation.get_children(),
         }
     }
 
     fn copy(&self) -> Expressions {
         match self.0.as_ref().borrow().deref() {
             InnerExpressions::Type(types) => types.copy(),
-            InnerExpressions::Addition(addition) => addition.copy(),
-            InnerExpressions::Multiplication(multiplication) => multiplication.copy(),
+            InnerExpressions::Operation(opeartion) => opeartion.copy(),
         }
     }
 
     fn solve(&self) -> Types {
         match self.0.as_ref().borrow().deref() {
             InnerExpressions::Type(types) => types.solve(),
-            InnerExpressions::Addition(addition) => addition.solve(),
-            InnerExpressions::Multiplication(multiplication) => multiplication.solve(),
+            InnerExpressions::Operation(opeartion) => opeartion.solve(),
         }
+    }
+}
+
+impl<T: Into<InnerExpressions>> From<T> for Expressions {
+    fn from(t: T) -> Self {
+        Expressions::new(t.into())
     }
 }
 
 trait Rule: Debug + Display {
     fn apply(&self) -> InnerExpressions;
     fn matches(expression: &Expressions) -> Option<Self> where Self: Sized;
-    // fn get_children(&self) -> Vec<Expressions>;
-}
-
-fn find_all_rules(expression: &Expressions) -> Vec<Box<dyn Rule>> {
-    let mut rules: Vec<Box<dyn Rule>> = vec![];
-
-    if let Some(rule) = Distributivity::matches(expression) {
-        rules.push(Box::new(rule));
-    }
-
-    rules
 }
 
 struct State {
@@ -153,7 +143,7 @@ impl Command for ChildrenCommand {
     }
 
     fn get_usage(&self) -> &'static str {
-        "[index]"
+        "[<index> | top]"
     }
 
     fn get_description(&self) -> &'static str {
@@ -164,6 +154,11 @@ impl Command for ChildrenCommand {
         let children = state.selection.get_children();
 
         if let Some(index) = args.first() {
+            if index == &"top" {
+                state.selection = state.current.clone();
+                return;
+            }
+
             match index.parse::<usize>() {
                 Ok(index) => {    
                     if index < children.len() {
@@ -185,6 +180,22 @@ impl Command for ChildrenCommand {
     }
 }
 
+struct TypeCommand {}
+
+impl Command for TypeCommand {
+    fn get_name(&self) -> &'static str {
+        "type"
+    }
+
+    fn get_description(&self) -> &'static str {
+        "Prints current equation with types"
+    }
+
+    fn execute(&self, state: &mut State, _args: &[&str]) {
+        println!("{:#}", state.current);
+    }
+}
+
 struct RulesCommand {}
 
 impl Command for RulesCommand {
@@ -197,7 +208,7 @@ impl Command for RulesCommand {
     }
 
     fn get_usage(&self) -> &'static str {
-        "[index]"
+        "[<index>]"
     }
 
     fn execute(&self, state: &mut State, args: &[&str]) {
@@ -210,10 +221,11 @@ impl Command for RulesCommand {
                         println!("Applying rule: {}", rules[index]);
                         *state.selection.0.borrow_mut() = rules[index].apply();
 
-                        let copy = state.current.copy();
+                        state.history.push(state.current.clone());
 
-                        state.selection = copy.clone();
-                        state.history.push(copy);
+                        // detach from history
+                        state.current = state.current.copy();
+                        state.selection = state.current.clone();
                     } else {
                         println!("Index: {index} out of range: {}", rules.len());
                     }
@@ -231,10 +243,11 @@ impl Command for RulesCommand {
     }
 }
 
-static COMMANDS: [&dyn Command; 4] = [
+static COMMANDS: [&dyn Command; 5] = [
     &HelpCommand {},
     &HistoryCommand {},
     &ChildrenCommand {},
+    &TypeCommand {},
     &RulesCommand {},
 ];
 
@@ -242,8 +255,8 @@ fn main() -> std::io::Result<()> {
     let equation: Expressions = Multiplication::new(Real::new(2.0).into(), Addition::new(Real::new(3.0).into(), Real::new(4.0).into()).into()).into();
     
     let mut state = State {
-        selection: equation.clone(),
         history: vec![equation.copy()],
+        selection: equation.clone(),
         current: equation,
     };
 
