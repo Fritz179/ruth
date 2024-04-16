@@ -7,12 +7,20 @@ mod operations;
 use operations::*;
 
 mod rules;
-use rules::*;
 
 #[derive(Debug, Clone)]
 enum InnerExpressions {
     Type(Types),
     Operation(Operation),
+}
+
+impl Display for InnerExpressions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InnerExpressions::Type(types) => Display::fmt(&types, f),
+            InnerExpressions::Operation(operation) => Display::fmt(&operation, f),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -21,6 +29,27 @@ pub struct Expressions(Rc<RefCell<InnerExpressions>>);
 impl Expressions {
     fn new(inner: InnerExpressions) -> Self {
         Self(Rc::new(RefCell::new(inner)))
+    }
+
+    fn is_operation(&self) -> Option<Operation> {
+        match self.0.as_ref().borrow().deref() {
+            InnerExpressions::Operation(operation) => Some(operation.clone()),
+            _ => None,
+        }
+    }
+
+    fn is_addition(&self) -> Option<Addition> {
+        match self.0.as_ref().borrow().deref() {
+            InnerExpressions::Operation(Operation::Addition(addition)) => Some(addition.clone()),
+            _ => None,
+        }
+    }
+
+    fn is_multiplication(&self) -> Option<Multiplication> {
+        match self.0.as_ref().borrow().deref() {
+            InnerExpressions::Operation(Operation::Multiplication(multiplication)) => Some(multiplication.clone()),
+            _ => None,
+        }
     }
 }
 
@@ -69,10 +98,14 @@ impl<T: Into<InnerExpressions>> From<T> for Expressions {
     }
 }
 
-trait Rule: Debug + Display {
-    fn apply(&self) -> InnerExpressions;
-    fn matches(expression: &Expressions) -> Option<Self> where Self: Sized;
+struct Rule {
+    matches: &'static dyn Fn(&Expressions) -> Option<InnerExpressions>,
+    name: &'static str,
+    description: &'static str,
 }
+
+unsafe impl Send for Rule {}
+unsafe impl Sync for Rule {}
 
 struct State {
     // Current working equation
@@ -212,14 +245,14 @@ impl Command for RulesCommand {
     }
 
     fn execute(&self, state: &mut State, args: &[&str]) {
-        let rules = find_all_rules(&state.selection);
+        let rules = rules::find_all_rules(&state.selection);
 
         if let Some(index) = args.first() {
             match index.parse::<usize>() {
                 Ok(index) => {    
                     if index < rules.len() {
                         println!("Applying rule: {}", rules[index]);
-                        *state.selection.0.borrow_mut() = rules[index].apply();
+                        *state.selection.0.borrow_mut() = rules[index].result();
 
                         state.history.push(state.current.clone());
 

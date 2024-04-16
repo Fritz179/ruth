@@ -1,85 +1,66 @@
-use std::{fmt::Display, ops::Deref};
+use crate::{Addition, Expressions, InnerExpressions, Multiplication, OperationTrait, Rule};
 
-use crate::{Addition, Expressions, InnerExpressions, Multiplication, Operation, OperationTrait, Rule, Types};
+static DISTRIBUTIVITY: Rule = Rule {
+    matches: &|expression: &Expressions| {
+        let mul = expression.is_multiplication()?;
+        let add = mul.right.is_addition()?;
 
-#[derive(Debug, Clone)]
-pub struct Distributivity {
-    expression: Expressions,
-    addition: Addition
-}
+        Some(Addition {
+            left: Multiplication::new(mul.left.clone(), add.right).into(), 
+            right: Multiplication::new(mul.left, add.left).into()
+        }.into())
+    },
+    name: "Distributivity",
+    description: "x * (a + b) = x * a + x * b"
+};
 
-impl Display for Distributivity {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Distributivity({}, {})", self.expression, self.addition)
-    }
-}
+static CONST_EVALUATION: Rule = Rule {
+    matches: &|expression: &Expressions| {
+        let result = expression.is_operation()?.solve().unwrap();
 
-impl Rule for Distributivity {
-    fn matches(expression: &Expressions) -> Option<Self> {
-        if let InnerExpressions::Operation(Operation::Multiplication(multiplication)) = expression.0.as_ref().borrow().deref() {
-            if let InnerExpressions::Operation(Operation::Addition(ref addition)) = multiplication.right.0.as_ref().borrow().deref() {
-                return Some(Distributivity {
-                    expression: multiplication.left.clone(),
-                    addition: addition.clone()
-                });
-            }
+        if result.is_value() {
+            Some(result.clone().into())
+        } else {
+            None
         }
+    },
+    name: "Constant Evaluation",
+    description: "1 + 1 = 2"
+};
 
-        None
-    }
+static RULES: [&'static Rule; 2] = [
+    &DISTRIBUTIVITY, 
+    &CONST_EVALUATION
+];
 
-    fn apply(&self) -> InnerExpressions {
-        let a = self.expression.clone();
-        let b = self.addition.left.clone();
-        let c = self.addition.right.clone();
-
-        Addition {
-            left: Multiplication::new(a.clone(), b).into(), 
-            right: Multiplication::new(a, c).into()
-        }.into()
-    }
+pub struct Match {
+    pub rule: &'static Rule,
+    pub result: InnerExpressions
 }
 
-#[derive(Debug, Clone)]
-pub struct ConstEvaluation {
-    result: Types
-}
-
-impl Display for ConstEvaluation {
+impl std::fmt::Display for Match {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ConstEvaluation({})", self.result)
+        write!(f, "{}: {}: {}", self.rule.name, self.rule.description, self.result)
     }
 }
 
-impl Rule for ConstEvaluation {
-    fn matches(expression: &Expressions) -> Option<Self> {
-        if let InnerExpressions::Operation(operation) = expression.0.as_ref().borrow().deref() {
-            let result = operation.solve().unwrap();
+impl Match {
+    pub fn result(&self) -> InnerExpressions {
+        // TODO: Should not clone
+        self.result.clone()
+    }
+}
 
-            if result.is_value() {
-                return Some(ConstEvaluation {
-                    result: result.clone()
-                });
-            }
+pub fn find_all_rules(expression: &Expressions) -> Vec<Match> {
+    let mut rules: Vec<Match> = vec![];
+
+    for rule in RULES.iter() {
+        if let Some(result) = (rule.matches)(expression) {
+            rules.push(Match {
+                rule: *rule,
+                result
+            });
         }
-
-        None
-    }
-
-    fn apply(&self) -> InnerExpressions {
-        self.result.clone().into()
-    }
-}
-
-pub fn find_all_rules(expression: &Expressions) -> Vec<Box<dyn Rule>> {
-    let mut rules: Vec<Box<dyn Rule>> = vec![];
-
-    if let Some(rule) = Distributivity::matches(expression) {
-        rules.push(Box::new(rule));
-    }
-
-    if let Some(rule) = ConstEvaluation::matches(expression) {
-        rules.push(Box::new(rule));
     }
 
     rules
