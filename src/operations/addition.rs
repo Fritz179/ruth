@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{Expressions, Types, Value};
+use crate::{Expressions, Types, Wrapper};
 use super::BinaryOperation;
 
 use super::OperationTrait;
@@ -11,18 +11,19 @@ pub trait Add<Rhs = Self> where {
     fn add(self, other: Rhs) -> Result<Self::Output, String>;
 }
 
-impl<L, R, O> Add<Value<R>> for Value<L> where
-    Value<L>: Into<Expressions>,
-    Value<R>: Into<Expressions>,
-    Value<O>: Into<Types>,
-    L: Add<R, Output = Value<O>>,
+impl<L, R, O> Add<Wrapper<R>> for Wrapper<L> where
+    Wrapper<L>: Into<Expressions>,
+    Wrapper<R>: Into<Expressions>,
+    Wrapper<O>: Into<Types>,
+    O: Into<Wrapper<O>>,
+    L: Add<R, Output = O>,
 {
     type Output = Types;
 
-    fn add(self, rhs: Value<R>) -> Result<Self::Output, String> {
+    fn add(self, rhs: Wrapper<R>) -> Result<Self::Output, String> {
         match (self, rhs) {
-            (Value::<L>::Constant(lhs), Value::<R>::Constant(rhs)) => Ok((lhs.add(rhs))?.into()),
-            (lhs, rhs) => Ok(Value::<O>::Expression(Addition::new(lhs.into(), rhs.into()).into()).into()),
+            (Wrapper::<L>::Constant(lhs), Wrapper::<R>::Constant(rhs)) => Ok((lhs.add(rhs))?.into().into()),
+            (lhs, rhs) => Ok(Wrapper::<O>::Expression(Addition::new(lhs.into(), rhs.into()).into()).into()),
         }
     }
 }

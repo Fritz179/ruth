@@ -59,16 +59,9 @@ impl Expressions {
         }
     }
 
-    fn is_natural(&self) -> Option<InnerNatural> {
+    fn is_zahl(&self) -> Option<Zahl> {
         match self.0.as_ref().borrow().deref() {
-            InnerExpressions::Type(Types::Natural(Value::Constant(natural))) => Some(natural.clone()),
-            _ => None,
-        }
-    }
-
-    fn is_zahl(&self) -> Option<InnerZahl> {
-        match self.0.as_ref().borrow().deref() {
-            InnerExpressions::Type(Types::Zahl(Value::Constant(natural))) => Some(natural.clone()),
+            InnerExpressions::Type(Types::Zahl(Wrapper::Constant(natural))) => Some(natural.clone()),
             _ => None,
         }
     }
@@ -286,8 +279,8 @@ fn main() {
     // let equation: Expressions = Multiplication::new(Natural::new(2).into(), Addition::new(Real::new(3.0).into(), Real::new(4.0).into()).into()).into();
     
     let equation: Expressions = Exponentiation::new(
-        Addition::new(Real::new_variable("b").into(), Real::new_variable("c").into()).into(),
-        Natural::new(2).into(), 
+        Addition::new(WrappedReal::new_variable("b").into(), WrappedReal::new_variable("c").into()).into(),
+        WrappedNatural::new(2).into(), 
     ).into();
 
     // let equation: Expressions = Subtraction::new(Natural::new(5).into(), Natural::new(6).into()).into();

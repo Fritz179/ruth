@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use crate::Zahl;
-use crate::{Expressions, Types, Value, MyInto};
+use crate::WrappedZahl;
+use crate::{Expressions, Types, Wrapper, MyInto};
 use super::BinaryOperation;
 
 use super::OperationTrait;
@@ -12,18 +12,19 @@ pub trait Sub<Rhs = Self> where {
     fn sub(self, other: Rhs) -> Result<Self::Output, String>;
 }
 
-impl<L, R, O> Sub<Value<R>> for Value<L> where
-    Value<L>: Into<Expressions>,
-    Value<R>: Into<Expressions>,
-    Value<O>: Into<Types>,
-    L: Sub<R, Output = Value<O>>,
+impl<L, R, O> Sub<Wrapper<R>> for Wrapper<L> where
+    Wrapper<L>: Into<Expressions>,
+    Wrapper<R>: Into<Expressions>,
+    Wrapper<O>: Into<Types>,
+    O: Into<Wrapper<O>>,
+    L: Sub<R, Output = O>,
 {
     type Output = Types;
 
-    fn sub(self, rhs: Value<R>) -> Result<Self::Output, String> {
+    fn sub(self, rhs: Wrapper<R>) -> Result<Self::Output, String> {
         match (self, rhs) {
-            (Value::<L>::Constant(lhs), Value::<R>::Constant(rhs)) => Ok((lhs.sub(rhs))?.into()),
-            (lhs, rhs) => Ok(Value::<O>::Expression(Subtraction::new(lhs.into(), rhs.into()).into()).into()),
+            (Wrapper::<L>::Constant(lhs), Wrapper::<R>::Constant(rhs)) => Ok((lhs.sub(rhs))?.into().into()),
+            (lhs, rhs) => Ok(Wrapper::<O>::Expression(Subtraction::new(lhs.into(), rhs.into()).into()).into()),
         }
     }
 }
@@ -59,7 +60,7 @@ impl OperationTrait for Subtraction {
 
     fn solve(&self) -> Result<Types, String> {
         match self.left.solve()? {
-            Types::Natural(left) => Ok((MyInto::<Zahl>::my_into(left).type_sub(self.right.solve()?))?),
+            Types::Natural(left) => Ok((MyInto::<WrappedZahl>::my_into(left).type_sub(self.right.solve()?))?),
             Types::Zahl(left) => Ok((left.type_sub(self.right.solve()?))?),
             Types::Real(left) => Ok((left.type_sub(self.right.solve()?))?),
         }

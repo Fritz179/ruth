@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{Expressions, Types, Value};
+use crate::{Expressions, Types, Wrapper};
 
 use super::OperationTrait;
 
@@ -10,18 +10,19 @@ pub trait Mul<Rhs = Self> {
     fn mul(self, other: Rhs) -> Result<Self::Output, String>;
 }
 
-impl<L, R, O> Mul<Value<R>> for Value<L> where
-    Value<L>: Into<Expressions>,
-    Value<R>: Into<Expressions>,
-    Value<O>: Into<Types>,
-    L: Mul<R, Output = Value<O>>,
+impl<L, R, O> Mul<Wrapper<R>> for Wrapper<L> where
+    Wrapper<L>: Into<Expressions>,
+    Wrapper<R>: Into<Expressions>,
+    Wrapper<O>: Into<Types>,
+    O: Into<Wrapper<O>>,
+    L: Mul<R, Output = O>,
 {
     type Output = Types;
 
-    fn mul(self, rhs: Value<R>) -> Result<Self::Output, String> {
+    fn mul(self, rhs: Wrapper<R>) -> Result<Self::Output, String> {
         match (self, rhs) {
-            (Value::<L>::Constant(lhs), Value::<R>::Constant(rhs)) => Ok((lhs.mul(rhs))?.into()),
-            (lhs, rhs) => Ok(Value::<O>::Expression(Multiplication::new(lhs.into(), rhs.into()).into()).into()),
+            (Wrapper::<L>::Constant(lhs), Wrapper::<R>::Constant(rhs)) => Ok((lhs.mul(rhs))?.into().into()),
+            (lhs, rhs) => Ok(Wrapper::<O>::Expression(Multiplication::new(lhs.into(), rhs.into()).into()).into()),
         }
     }
 }

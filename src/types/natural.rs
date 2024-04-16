@@ -1,10 +1,10 @@
-use crate::{operations::{Add, Exp, Mul, TypeAdd, TypeExp, TypeMul}, Real, Zahl};
-use super::{Types, Value, MyFrom, MyInto};
+use crate::{operations::{Add, Exp, Mul, TypeAdd, TypeExp, TypeMul}, WrappedReal, WrappedZahl};
+use super::{MyFrom, MyInto, Types, Wrapper};
 
 #[derive(Debug, Clone)]
-pub struct InnerNatural(u32);
+pub struct Natural(u32);
 
-impl InnerNatural {
+impl Natural {
     pub fn new(value: u32) -> Self {
         Self(value)
     }
@@ -14,11 +14,11 @@ impl InnerNatural {
     }
 }
 
-pub type Natural = Value<InnerNatural>;
+pub type WrappedNatural = Wrapper<Natural>;
 
-impl Natural {
+impl WrappedNatural {
     pub fn new(value: u32) -> Self {
-        Self::Constant(InnerNatural(value))
+        Self::Constant(Natural(value))
     }
 
     pub fn get_type(&self) -> &str {
@@ -26,13 +26,13 @@ impl Natural {
     }
 }
 
-impl MyFrom<InnerNatural> for InnerNatural {
-    fn my_from(from: InnerNatural) -> Self {
+impl MyFrom<Natural> for Natural {
+    fn my_from(from: Natural) -> Self {
         from
     }
 }
 
-impl Add for InnerNatural {
+impl Add for Natural {
     type Output = Natural;
 
     fn add(self, rhs: Self) -> Result<Self::Output, String> {
@@ -40,17 +40,17 @@ impl Add for InnerNatural {
     }
 }
 
-impl TypeAdd for Natural {
+impl TypeAdd for WrappedNatural {
     fn type_add(self, rhs: Types) -> Result<Types, String> {
         match rhs {
             Types::Natural(rhs) => self.add(rhs),
-            Types::Zahl(rhs) => MyInto::<Zahl>::my_into(self).add(rhs),
-            Types::Real(rhs) => MyInto::<Real>::my_into(self).add(rhs),
+            Types::Zahl(rhs) => MyInto::<WrappedZahl>::my_into(self).add(rhs),
+            Types::Real(rhs) => MyInto::<WrappedReal>::my_into(self).add(rhs),
         }
     }
 }
 
-impl Mul for InnerNatural {
+impl Mul for Natural {
     type Output = Natural;
 
     fn mul(self, rhs: Self) -> Result<Self::Output, String> {
@@ -58,17 +58,17 @@ impl Mul for InnerNatural {
     }
 }
 
-impl TypeMul for Natural {
+impl TypeMul for WrappedNatural {
     fn type_mul(self, rhs: Types) -> Result<Types, String> {
         match rhs {
             Types::Natural(rhs) => self.mul(rhs),
-            Types::Zahl(rhs) => MyInto::<Zahl>::my_into(self).mul(rhs),
-            Types::Real(rhs) => MyInto::<Real>::my_into(self).mul(rhs),
+            Types::Zahl(rhs) => MyInto::<WrappedZahl>::my_into(self).mul(rhs),
+            Types::Real(rhs) => MyInto::<WrappedReal>::my_into(self).mul(rhs),
         }
     }
 }
 
-impl Exp for InnerNatural {
+impl Exp for Natural {
     type Output = Natural;
 
     fn exp(self, rhs: Self) -> Result<Self::Output, String> {
@@ -76,24 +76,18 @@ impl Exp for InnerNatural {
     }
 }
 
-impl TypeExp for Natural {
+impl TypeExp for WrappedNatural {
     fn type_exp(self, rhs: Types) -> Result<Types, String> {
         match rhs {
             Types::Natural(rhs) => self.exp(rhs),
-            Types::Zahl(rhs) => MyInto::<Real>::my_into(self).exp(MyInto::<Real>::my_into(rhs)),
-            Types::Real(rhs) => MyInto::<Real>::my_into(self).exp(rhs),
+            Types::Zahl(rhs) => MyInto::<WrappedReal>::my_into(self).exp(MyInto::<WrappedReal>::my_into(rhs)),
+            Types::Real(rhs) => MyInto::<WrappedReal>::my_into(self).exp(rhs),
         }
     }
 }
 
-impl std::fmt::Display for InnerNatural {
+impl std::fmt::Display for Natural {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.get())
-    }
-}
-
-impl From<Natural> for Types {
-    fn from(real: Natural) -> Self {
-        Types::Natural(real)
     }
 }

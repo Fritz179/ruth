@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{Expressions, Types, Value};
+use crate::{Expressions, Types, Wrapper};
 use super::BinaryOperation;
 
 use super::OperationTrait;
@@ -11,18 +11,19 @@ pub trait Exp<Rhs = Self> where {
     fn exp(self, other: Rhs) -> Result<Self::Output, String>;
 }
 
-impl<L, R, O> Exp<Value<R>> for Value<L> where
-    Value<L>: Into<Expressions>,
-    Value<R>: Into<Expressions>,
-    Value<O>: Into<Types>,
-    L: Exp<R, Output = Value<O>>,
+impl<L, R, O> Exp<Wrapper<R>> for Wrapper<L> where
+    Wrapper<L>: Into<Expressions>,
+    Wrapper<R>: Into<Expressions>,
+    Wrapper<O>: Into<Types>,
+    O: Into<Wrapper<O>>,
+    L: Exp<R, Output = O>,
 {
     type Output = Types;
 
-    fn exp(self, rhs: Value<R>) -> Result<Self::Output, String> {
+    fn exp(self, rhs: Wrapper<R>) -> Result<Self::Output, String> {
         match (self, rhs) {
-            (Value::<L>::Constant(lhs), Value::<R>::Constant(rhs)) => Ok((lhs.exp(rhs))?.into()),
-            (lhs, rhs) => Ok(Value::<O>::Expression(Exponentiation::new(lhs.into(), rhs.into()).into()).into()),
+            (Wrapper::<L>::Constant(lhs), Wrapper::<R>::Constant(rhs)) => Ok((lhs.exp(rhs))?.into().into()),
+            (lhs, rhs) => Ok(Wrapper::<O>::Expression(Exponentiation::new(lhs.into(), rhs.into()).into()).into()),
         }
     }
 }

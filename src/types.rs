@@ -1,4 +1,5 @@
 mod natural;
+use enum_dispatch::enum_dispatch;
 pub use natural::*;
 
 mod zahl;
@@ -11,24 +12,32 @@ use std::fmt::{Debug, Display};
 
 use crate::{Expressions, InnerExpressions};
 
+#[enum_dispatch]
+pub trait TypeTrait {
+    fn is_value(&self) -> bool;
+    fn is_variable(&self) -> bool;
+}
+
 #[derive(Debug, Clone)]
-pub enum Value<T> {
+pub enum Wrapper<T> {
     Constant(T),
     Variable(String),
     Expression(Expressions),
 }
 
-impl<T> Value<T> {
+impl<T> Wrapper<T> {
     pub fn new_variable(name: &str) -> Self {
-        Value::Variable(name.to_string())
+        Wrapper::Variable(name.to_string())
+    }
+}
+
+impl<T> TypeTrait for Wrapper<T> {
+    fn is_value(&self) -> bool {
+        matches!(self, Wrapper::Constant(_))
     }
 
-    pub fn is_value(&self) -> bool {
-        matches!(self, Value::Constant(_))
-    }
-
-    pub fn is_variable(&self) -> bool {
-        matches!(self, Value::Constant(_))
+    fn is_variable(&self) -> bool {
+        matches!(self, Wrapper::Constant(_))
     }
 }
 
@@ -46,35 +55,30 @@ impl<From, Into> MyInto<Into> for From where Into: MyFrom<From> {
     }
 } 
 
-impl<T, O> MyFrom<Value<T>> for Value<O> where T: MyInto<O> {
-    fn my_from(from: Value<T>) -> Self {
+impl<T, O> MyFrom<Wrapper<T>> for Wrapper<O> where T: MyInto<O> {
+    fn my_from(from: Wrapper<T>) -> Self {
         match from {
-            Value::Constant(inner) => Value::Constant(inner.my_into()),
-            Value::Variable(name) => Value::Variable(name.clone()),
-            Value::Expression(expression) => Value::Expression(expression.clone()),
+            Wrapper::Constant(inner) => Wrapper::Constant(inner.my_into()),
+            Wrapper::Variable(name) => Wrapper::Variable(name.clone()),
+            Wrapper::Expression(expression) => Wrapper::Expression(expression.clone()),
         }
     }
 }
 
-impl<T> From<T> for Value<T> {
-    fn from(t: T) -> Self {
-        Value::Constant(t)
-    }
-}
-
 #[derive(Debug, Clone)]
+#[enum_dispatch(TypeTrait)]
 pub enum Types {
-    Natural(Natural),
-    Zahl(Zahl),
-    Real(Real),
+    Natural(WrappedNatural),
+    Zahl(WrappedZahl),
+    Real(WrappedReal),
 }
 
-impl<T: Display> Display for Value<T> {
+impl<T: Display> Display for Wrapper<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::<T>::Constant(inner) => Display::fmt(&inner, f),
-            Value::<T>::Variable(name) => Display::fmt(&name, f),
-            Value::<T>::Expression(expression) => Display::fmt(&expression, f),
+            Wrapper::<T>::Constant(inner) => Display::fmt(&inner, f),
+            Wrapper::<T>::Variable(name) => Display::fmt(&name, f),
+            Wrapper::<T>::Expression(expression) => Display::fmt(&expression, f),
         }
     }
 }
@@ -92,25 +96,9 @@ impl Display for Types {
 impl Types {
     pub fn get_type(&self) -> &str {
         match self {
-            Types::Natural(natural) => natural.get_type(),
-            Types::Zahl(zahl) => zahl.get_type(),
-            Types::Real(real) => real.get_type(),
-        }
-    }
-
-    pub fn is_value(&self) -> bool {
-        match self {
-            Types::Natural(natural) => natural.is_value(),
-            Types::Zahl(zahl) => zahl.is_value(),
-            Types::Real(real) => real.is_value(),
-        }
-    }
-
-    pub fn is_variable(&self) -> bool {
-        match self {
-            Types::Natural(natural) => natural.is_variable(),
-            Types::Zahl(zahl) => zahl.is_variable(),
-            Types::Real(real) => real.is_variable(),
+            Types::Real(wrapped) => wrapped.get_type(),
+            Types::Natural(wrapped) => wrapped.get_type(),
+            Types::Zahl(wrapped) => wrapped.get_type(),
         }
     }
 
@@ -127,14 +115,47 @@ impl Types {
     }
 }
 
-impl From<Types> for InnerExpressions {
-    fn from(t: Types) -> Self {
-        InnerExpressions::Type(t)
+impl<T> From<T> for Wrapper<T> {
+    fn from(t: T) -> Self {
+        Wrapper::Constant(t)
     }
 }
 
-impl<T> From<Value<T>> for InnerExpressions where Value<T>: Into<Types> {
-    fn from(real: Value<T>) -> Self {
+// impl<T> From<T> for Types where 
+//     T: Into<Wrapper<T>>,
+//     Wrapper<T>: Into<Types>,
+// {
+//     fn from(t: T) -> Self {
+//         t.into().into()
+//     }
+// }
+
+// impl<T: Into<Wrapper<T>>> From<T> for Expressions where Wrapper<T>: Into<Types> {
+//     fn from(t: T) -> Self {
+//         Expressions::new(InnerExpressions::Type(t.into().into()))
+//     }
+// }
+
+// impl From<Types> for InnerExpressions {
+//     fn from(t: Types) -> Self {
+//         InnerExpressions::Type(t)
+//     }
+// }
+
+// impl<T: Into<Wrapper<T>>> From<T> for Types where Wrapper<T>: Into<Types> {
+//     fn from(real: T) -> Self {
+//         Wrapper::Constant(real).into()
+//     }
+// }
+
+impl From<Types> for InnerExpressions {
+    fn from(value: Types) -> Self {
+        InnerExpressions::Type(value)
+    }
+}
+
+impl<T> From<Wrapper<T>> for InnerExpressions where Wrapper<T>: Into<Types> {
+    fn from(real: Wrapper<T>) -> Self {
         InnerExpressions::Type(real.into())
     }
 }

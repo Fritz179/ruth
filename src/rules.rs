@@ -1,4 +1,4 @@
-use crate::{operations::{Exponentiation, Subtraction}, Addition, Expressions, InnerExpressions, Multiplication, Natural, Rule};
+use crate::{operations::{Exponentiation, Subtraction}, Addition, Expressions, InnerExpressions, Multiplication, Rule, WrappedNatural, TypeTrait};
 
 use super::operations::OperationTrait;
 
@@ -25,8 +25,8 @@ static EXPONENT_TO_MULTIPLICATION: Rule = Rule {
             right: Exponentiation {
                 left: exp.left,
                 right: Subtraction {
-                    left: exp.right.clone().into(),
-                    right: Natural::new(1).into()
+                    left: exp.right.clone(),
+                    right: WrappedNatural::new(1).into()
                 }.into()
             }.into()
         }.into())

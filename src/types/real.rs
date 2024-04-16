@@ -1,10 +1,10 @@
 use crate::operations::{Add, Exp, Mul, Sub, TypeAdd, TypeExp, TypeMul, TypeSub};
-use super::{zahl::InnerZahl, Types, Value, MyFrom, MyInto};
+use super::{zahl::Zahl, MyFrom, MyInto, Types, Wrapper};
 
 #[derive(Debug, Clone)]
-pub struct InnerReal(f32);
+pub struct Real(f32);
 
-impl InnerReal {
+impl Real {
     pub fn new(value: f32) -> Self {
         Self(value)
     }
@@ -14,11 +14,11 @@ impl InnerReal {
     }
 }
 
-pub type Real = Value<InnerReal>;
+pub type WrappedReal = Wrapper<Real>;
 
-impl Real {
+impl WrappedReal {
     pub fn new(value: f32) -> Self {
-        Self::Constant(InnerReal(value))
+        Self::Constant(Real(value))
     }
 
     pub fn get_type(&self) -> &str {
@@ -26,19 +26,19 @@ impl Real {
     }
 }
 
-impl<From: MyInto<InnerZahl>> MyFrom<From> for InnerReal {
-    fn my_from(from: From) -> InnerReal {
+impl<From: MyInto<Zahl>> MyFrom<From> for Real {
+    fn my_from(from: From) -> Real {
         Self::new(from.my_into().get() as f32)
     }
 }
 
-impl MyFrom<InnerReal> for InnerReal {
-    fn my_from(from: InnerReal) -> Self {
+impl MyFrom<Real> for Real {
+    fn my_from(from: Real) -> Self {
         from
     }
 }
 
-impl Add for InnerReal {
+impl Add for Real {
     type Output = Real;
 
     fn add(self, rhs: Self) -> Result<Self::Output, String> {
@@ -46,7 +46,7 @@ impl Add for InnerReal {
     }
 }
 
-impl TypeAdd for Real {
+impl TypeAdd for WrappedReal {
     fn type_add(self, rhs: Types) -> Result<Types, String> {
         match rhs {
             Types::Natural(rhs) => self.add(rhs.my_into()),
@@ -56,7 +56,7 @@ impl TypeAdd for Real {
     }
 }
 
-impl Sub for InnerReal {
+impl Sub for Real {
     type Output = Real;
 
     fn sub(self, rhs: Self) -> Result<Self::Output, String> {
@@ -64,7 +64,7 @@ impl Sub for InnerReal {
     }
 }
 
-impl TypeSub for Real {
+impl TypeSub for WrappedReal {
     fn type_sub(self, rhs: Types) -> Result<Types, String> {
         match rhs {
             Types::Natural(rhs) => self.sub(rhs.my_into()),
@@ -74,7 +74,7 @@ impl TypeSub for Real {
     }
 }
 
-impl Mul for InnerReal {
+impl Mul for Real {
     type Output = Real;
 
     fn mul(self, rhs: Self) -> Result<Self::Output, String> {
@@ -82,7 +82,7 @@ impl Mul for InnerReal {
     }
 }
 
-impl TypeMul for Real {
+impl TypeMul for WrappedReal {
     fn type_mul(self, rhs: Types) -> Result<Types, String> {
         match rhs {
             Types::Natural(rhs) => self.mul(rhs.my_into()),
@@ -92,7 +92,7 @@ impl TypeMul for Real {
     }
 }
 
-impl Exp for InnerReal {
+impl Exp for Real {
     type Output = Real;
 
     fn exp(self, rhs: Self) -> Result<Self::Output, String> {
@@ -100,7 +100,7 @@ impl Exp for InnerReal {
     }
 }
 
-impl TypeExp for Real {
+impl TypeExp for WrappedReal {
     fn type_exp(self, rhs: Types) -> Result<Types, String> {
         match rhs {
             Types::Natural(rhs) => self.exp(rhs.my_into()),
@@ -111,14 +111,8 @@ impl TypeExp for Real {
 }
 
 
-impl std::fmt::Display for InnerReal {
+impl std::fmt::Display for Real {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.get())
-    }
-}
-
-impl From<Real> for Types {
-    fn from(real: Real) -> Self {
-        Types::Real(real)
     }
 }
